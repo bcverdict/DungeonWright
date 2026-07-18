@@ -1,0 +1,30 @@
+---
+description: How to style <select> dropdowns so the custom arrow stays pinned to the right edge
+globs: **/*.vue,**/*.css
+alwaysApply: false
+---
+
+# Select dropdown styling
+
+All `<select>` elements get their look from the global `select` rule in `src/style.css`. That rule sets `appearance: none`, replaces the native arrow with an SVG chevron via `background: ... no-repeat right 8px center`, and reserves `padding-right: 26px` so text never overlaps the arrow.
+
+When adding a new dropdown:
+
+- Do NOT redeclare `appearance`, `background`, or the padding shorthand in component-scoped styles. Overriding `background` removes the chevron; overriding the `padding` shorthand (e.g. `padding: 7px 9px`) shrinks the right padding and pushes the arrow out of position (arrow appears too far left / overlapped).
+- Component styles should only adjust layout: width, flex, `min-width`, `padding-top`/`padding-bottom`, `font-size`.
+
+```css
+/* ❌ BAD — kills the chevron and misplaces the arrow */
+.my-panel select {
+  background: #131722;
+  padding: 7px 9px;
+}
+
+/* ✅ GOOD — layout tweaks only, chevron comes from global rule */
+.my-panel select {
+  flex: 1;
+  min-width: 0;
+  padding-top: 7px;
+  padding-bottom: 7px;
+}
+```

@@ -28,7 +28,9 @@ async function onDelete(id: string, name: string): Promise<void> {
 
 <template>
   <div class="panel">
-    <button class="upload-btn" @click="fileInput?.click()">+ Add scene images</button>
+    <button class="upload-btn" @click="fileInput?.click()">
+      <i class="pi pi-plus"></i> Add scene images
+    </button>
     <input
       ref="fileInput"
       type="file"
@@ -52,8 +54,12 @@ async function onDelete(id: string, name: string): Promise<void> {
         <img :src="imageUrls[s.imageId]" alt="" />
         <div class="card-name" :title="s.name">{{ s.name }}</div>
         <div class="card-actions">
-          <button title="Rename" @click.stop="onRename(s.id, s.name)">✎</button>
-          <button title="Delete" @click.stop="onDelete(s.id, s.name)">×</button>
+          <button title="Rename" @click.stop="onRename(s.id, s.name)">
+            <i class="pi pi-pencil"></i>
+          </button>
+          <button title="Delete" @click.stop="onDelete(s.id, s.name)">
+            <i class="pi pi-trash"></i>
+          </button>
         </div>
       </div>
     </div>

@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { state, addCharacter, addCharacterToDraft, deleteCharacter, renameCharacter } from '../store'
+import { useRouter } from 'vue-router'
+import { state, addCharacter, addCharacterToDraft, deleteCharacter } from '../store'
 import { imageUrls } from '../imageStore'
 
+const router = useRouter()
 const fileInput = ref<HTMLInputElement | null>(null)
 
 async function onFiles(files: FileList | null): Promise<void> {
@@ -14,9 +16,8 @@ async function onFiles(files: FileList | null): Promise<void> {
   if (fileInput.value) fileInput.value.value = ''
 }
 
-function onRename(id: string, current: string): void {
-  const name = prompt('Character name', current)
-  if (name?.trim()) renameCharacter(id, name.trim())
+function openSheet(id: string): void {
+  void router.push(`/character/${id}`)
 }
 
 async function onDelete(id: string, name: string): Promise<void> {
@@ -32,7 +33,9 @@ function onDragStart(e: DragEvent, characterId: string): void {
 
 <template>
   <div class="panel">
-    <button class="upload-btn" @click="fileInput?.click()">+ Add character images</button>
+    <button class="upload-btn" @click="fileInput?.click()">
+      <i class="pi pi-plus"></i> Add character images
+    </button>
     <input
       ref="fileInput"
       type="file"
@@ -58,8 +61,12 @@ function onDragStart(e: DragEvent, characterId: string): void {
         <img :src="imageUrls[c.imageId]" alt="" draggable="false" />
         <div class="card-name" :title="c.name">{{ c.name }}</div>
         <div class="card-actions">
-          <button title="Rename" @click.stop="onRename(c.id, c.name)">✎</button>
-          <button title="Delete" @click.stop="onDelete(c.id, c.name)">×</button>
+          <button title="Edit character sheet" @click.stop="openSheet(c.id)">
+            <i class="pi pi-pencil"></i>
+          </button>
+          <button title="Delete" @click.stop="onDelete(c.id, c.name)">
+            <i class="pi pi-trash"></i>
+          </button>
         </div>
       </div>
     </div>

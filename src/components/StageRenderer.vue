@@ -13,6 +13,8 @@ const props = defineProps<{
   sceneUrl: string | null
   tokens: StageToken[]
   editable?: boolean
+  /** Cross-fade when the scene changes (used on the player screen). */
+  fadeScene?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -98,12 +100,22 @@ function onDrop(e: DragEvent): void {
   <div
     ref="stageEl"
     class="stage"
+    :class="{ 'fade-scene': fadeScene }"
     @pointerdown="onStagePointerDown"
     @dragover.prevent
     @drop="onDrop"
   >
-    <img v-if="sceneUrl" :src="sceneUrl" class="scene-img" alt="" draggable="false" />
-    <div v-else class="empty-scene">No scene</div>
+    <Transition name="scene-fade">
+      <img
+        v-if="sceneUrl"
+        :key="sceneUrl"
+        :src="sceneUrl"
+        class="scene-img"
+        alt=""
+        draggable="false"
+      />
+      <div v-else class="empty-scene">No scene</div>
+    </Transition>
 
     <div
       v-for="(t, i) in tokens"
@@ -120,9 +132,11 @@ function onDrop(e: DragEvent): void {
     >
       <img :src="t.url" alt="" draggable="false" />
       <div v-if="editable && selected === i" class="token-controls" @pointerdown.stop>
-        <button title="Smaller" @click="nudgeScale(i, -1)">−</button>
-        <button title="Larger" @click="nudgeScale(i, 1)">+</button>
-        <button class="danger" title="Remove from screen" @click="emit('remove', i)">×</button>
+        <button title="Smaller" @click="nudgeScale(i, -1)"><i class="pi pi-minus"></i></button>
+        <button title="Larger" @click="nudgeScale(i, 1)"><i class="pi pi-plus"></i></button>
+        <button class="danger" title="Remove from screen" @click="emit('remove', i)">
+          <i class="pi pi-times"></i>
+        </button>
       </div>
       <div v-if="editable && selected === i && t.label" class="token-label">{{ t.label }}</div>
     </div>
@@ -146,6 +160,14 @@ function onDrop(e: DragEvent): void {
   height: 100%;
   object-fit: contain;
   pointer-events: auto;
+}
+.fade-scene .scene-fade-enter-active,
+.fade-scene .scene-fade-leave-active {
+  transition: opacity 0.6s ease;
+}
+.fade-scene .scene-fade-enter-from,
+.fade-scene .scene-fade-leave-to {
+  opacity: 0;
 }
 .empty-scene {
   position: absolute;

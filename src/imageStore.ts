@@ -38,11 +38,39 @@ export async function putImage(id: string, blob: Blob): Promise<void> {
   imageUrls[id] = URL.createObjectURL(blob)
 }
 
+const pendingLoads = new Map<string, Promise<void>>()
+
 export async function ensureImageUrl(id: string): Promise<void> {
   if (imageUrls[id]) return
+  // Dedupe concurrent calls so the same image never gets two object URLs
+  // (which would leak one and needlessly swap the src).
+  let pending = pendingLoads.get(id)
+  if (!pending) {
+    pending = (async () => {
+      const db = await openDb()
+      const blob = await reqPromise<Blob | undefined>(
+        db.transaction(STORE).objectStore(STORE).get(id),
+      )
+      if (blob && !imageUrls[id]) imageUrls[id] = URL.createObjectURL(blob)
+    })().finally(() => pendingLoads.delete(id))
+    pendingLoads.set(id, pending)
+  }
+  return pending
+}
+
+/** All stored images, keyed by image id (used for file backups). */
+export async function getAllImageBlobs(): Promise<Record<string, Blob>> {
   const db = await openDb()
-  const blob = await reqPromise<Blob | undefined>(db.transaction(STORE).objectStore(STORE).get(id))
-  if (blob) imageUrls[id] = URL.createObjectURL(blob)
+  const store = db.transaction(STORE).objectStore(STORE)
+  const [keys, values] = await Promise.all([
+    reqPromise(store.getAllKeys()),
+    reqPromise(store.getAll() as IDBRequest<Blob[]>),
+  ])
+  const result: Record<string, Blob> = {}
+  keys.forEach((key, i) => {
+    result[String(key)] = values[i]!
+  })
+  return result
 }
 
 export async function removeImage(id: string): Promise<void> {

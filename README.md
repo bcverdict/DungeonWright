@@ -16,6 +16,10 @@ The player window updates live whenever you press **Update player screen**.
 
 ## How it works
 
+- **Campaigns**: the dropdown at the top of the sidebar switches between projects — each campaign
+  or one-shot keeps its own scenes, characters, map, notes, music, and player-screen history. Use
+  the +, ✎, and × buttons beside it to create, rename, or delete campaigns. Switching campaigns
+  also updates the player window to that campaign's last published screen.
 - **Scenes** (sidebar): upload location/backdrop images. Click one to load it into the preview.
 - **Characters** (sidebar): upload character/monster art. Click to place on the preview, or drag
   onto the stage. Drag tokens to move them, scroll (or use the +/− controls) to resize, × to
@@ -31,7 +35,15 @@ The player window updates live whenever you press **Update player screen**.
   are published.
 - **Prev / next screen**: steps through previously published player screens, loading each into
   the preview so you can re-publish it.
+- **Music** (sidebar): save YouTube links with a title and a note about when to play them
+  (e.g. Title: "Intense", Note: "Play this when they spring the trap"). Attach tracks to the
+  scene you're currently previewing; when you travel to a scene (via the map or the Scenes tab),
+  its attached music appears on the DM screen with the notes, one click from opening in YouTube.
 - **Notes**: per-scene DM notes, saved automatically.
+- **Ability cards** (top bar): edit and print the homebrew abilities as 5in × 3in flashcards.
+  Each card has art (bundled with the app in `src/assets/abilities`), a title, flavor text, and a
+  description. The card is shown at true physical size, so printing gives you exact 5×3 cards to
+  cut out. Card text is saved automatically and included in file backups.
 
 All data (images included) is stored locally in your browser (localStorage + IndexedDB), so your
 campaign persists between sessions on the same machine and browser.

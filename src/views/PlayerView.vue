@@ -31,7 +31,7 @@ const tokens = computed<StageToken[]>(() =>
 
 <template>
   <div class="player-screen">
-    <StageRenderer :scene-url="sceneUrl" :tokens="tokens" />
+    <StageRenderer :scene-url="sceneUrl" :tokens="tokens" fade-scene />
   </div>
 </template>
 

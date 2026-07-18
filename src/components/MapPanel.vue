@@ -190,8 +190,7 @@ function toggleConnectMode(): void {
   margin-bottom: 8px;
 }
 .map-toolbar button {
-  width: 100%;
-  padding: 8px;
+  padding: 8px 14px;
   border: 1px solid #3b4763;
   border-radius: 6px;
   background: #1a2030;
