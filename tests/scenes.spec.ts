@@ -4,7 +4,11 @@ import {
   card,
   dismissDialog,
   gotoDm,
+  mapNode,
+  placeCharacter,
+  previewTokens,
   selectScene,
+  uploadCharacters,
   uploadScenes,
 } from './helpers'
 
@@ -32,6 +36,22 @@ test.describe('scenes', () => {
     await selectScene(page, 'Cave')
     await expect(page.locator('.scene-title h1')).toHaveText('Cave')
     await expect(card(page, 'Forest')).not.toHaveClass(/active/)
+  })
+
+  test('characters move along when transitioning to another scene', async ({ page }) => {
+    await gotoDm(page)
+    await uploadScenes(page, ['Forest', 'Cave'])
+    await uploadCharacters(page, ['Hero', 'Goblin'])
+    await selectScene(page, 'Forest')
+    await placeCharacter(page, 'Hero')
+    await placeCharacter(page, 'Goblin')
+
+    await selectScene(page, 'Cave')
+    await expect(previewTokens(page)).toHaveCount(2)
+
+    // The party left Forest, so only Cave shows presence dots on the map.
+    await expect(mapNode(page, 'Cave').locator('circle.char-dot')).toHaveCount(2)
+    await expect(mapNode(page, 'Forest').locator('circle.char-dot')).toHaveCount(0)
   })
 
   test('rename a scene via prompt', async ({ page }) => {

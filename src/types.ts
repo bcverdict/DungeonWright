@@ -122,6 +122,8 @@ export interface CharacterPlacement {
   y: number
   /** Token height as a fraction of stage height */
   scale: number
+  /** Stays in the scene but is not shown on the player screen. */
+  hidden?: boolean
 }
 
 export interface ScreenComposition {

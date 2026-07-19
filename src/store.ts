@@ -311,24 +311,81 @@ function saveDraftToSceneComposition(): void {
   }
 }
 
-/** Switch the draft to a scene, restoring that scene's saved character layout. */
+const DEFAULT_TOKEN_SCALE = 0.18
+/** Default vertical center for new tokens, near the bottom of the stage. */
+const DEFAULT_TOKEN_Y = 0.85
+
+/** Whether (x, y) keeps clear of every existing token center. */
+function isFreeSpot(x: number, y: number, others: CharacterPlacement[], scale: number): boolean {
+  // Tokens are `scale` of the stage height tall; on a wide stage the same
+  // token spans a smaller fraction of the width, hence the tighter x gap.
+  return others.every(
+    (p) => Math.abs(p.x - x) >= scale * 0.6 || Math.abs(p.y - y) >= scale * 0.95,
+  )
+}
+
+/**
+ * The spot itself if unoccupied, otherwise the nearest free spot found by
+ * fanning out sideways and then row by row upward.
+ */
+function findFreeSpot(
+  others: CharacterPlacement[],
+  scale: number,
+  startX = 0.5,
+  startY = DEFAULT_TOKEN_Y,
+): { x: number; y: number } {
+  const stepX = scale * 0.62
+  const stepY = scale
+  for (let row = 0; row < 12; row++) {
+    for (let i = 0; i < 25; i++) {
+      const dir = i % 2 === 0 ? 1 : -1
+      const x = startX + dir * Math.ceil(i / 2) * stepX
+      const y = startY - row * stepY
+      if (x < 0.04 || x > 0.96 || y < 0.06 || y > 0.96) continue
+      if (isFreeSpot(x, y, others, scale)) return { x, y }
+    }
+  }
+  return { x: startX, y: startY }
+}
+
+/** Switch the draft to a scene; characters on screen move along to it. */
 export function switchToScene(sceneId: string | null): void {
   if (state.draft.sceneId === sceneId) return
   beginDraftEdit()
-  saveDraftToSceneComposition()
+  const movers = clone(state.draft.characters)
+  // The party travels with the transition, so it leaves the previous scene.
+  if (state.draft.sceneId) state.sceneCompositions[state.draft.sceneId] = []
+  const chars = sceneId ? clone(state.sceneCompositions[sceneId] ?? []) : []
+  for (const m of movers) {
+    if (chars.some((p) => p.characterId === m.characterId)) continue
+    chars.push({ ...m, ...findFreeSpot(chars, m.scale, m.x, m.y) })
+  }
   state.draft.sceneId = sceneId
-  state.draft.characters = sceneId ? clone(state.sceneCompositions[sceneId] ?? []) : []
+  state.draft.characters = chars
+  saveDraftToSceneComposition()
 }
 
-export function addCharacterToDraft(characterId: string, x = 0.5, y = 0.7): void {
+export function addCharacterToDraft(characterId: string, x = 0.5, y = DEFAULT_TOKEN_Y): void {
   beginDraftEdit()
-  state.draft.characters.push({ characterId, x, y, scale: 0.28 })
+  const spot = findFreeSpot(state.draft.characters, DEFAULT_TOKEN_SCALE, x, y)
+  state.draft.characters.push({ characterId, ...spot, scale: DEFAULT_TOKEN_SCALE })
   saveDraftToSceneComposition()
 }
 
 export function removeCharacterFromDraft(index: number): void {
   beginDraftEdit()
   state.draft.characters.splice(index, 1)
+  saveDraftToSceneComposition()
+}
+
+/** Keep the character in the scene but hide it from (or reveal it to) players. */
+export function toggleCharacterHidden(index: number): void {
+  const p = state.draft.characters[index]
+  if (!p) return
+  beginDraftEdit()
+  // Delete rather than store `false` so the draft/committed comparison stays stable.
+  if (p.hidden) delete p.hidden
+  else p.hidden = true
   saveDraftToSceneComposition()
 }
 
@@ -357,6 +414,7 @@ export const isDirty = computed(
 function resolveLiveView(comp: ScreenComposition): LiveView {
   const scene = state.scenes.find((s) => s.id === comp.sceneId)
   const tokens = comp.characters.flatMap((p) => {
+    if (p.hidden) return []
     const ch = state.characters.find((c) => c.id === p.characterId)
     return ch ? [{ imageId: ch.imageId, x: p.x, y: p.y, scale: p.scale }] : []
   })

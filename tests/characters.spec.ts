@@ -4,9 +4,11 @@ import {
   card,
   dragTokenTo,
   gotoDm,
+  liveTokens,
   openTab,
   placeCharacter,
   previewTokens,
+  publish,
   uploadCharacters,
   uploadScenes,
 } from './helpers'
@@ -25,6 +27,28 @@ test.describe('characters', () => {
     // Characters without a scene shows "Characters only".
     await expect(page.locator('.scene-title h1')).toHaveText('Characters only')
     await expect(page.locator('.badge.dirty')).toBeVisible()
+  })
+
+  test('clicked-in characters are placed without overlapping each other', async ({ page }) => {
+    await gotoDm(page)
+    await uploadCharacters(page, ['Hero', 'Goblin', 'Wizard'])
+    await placeCharacter(page, 'Hero')
+    await placeCharacter(page, 'Goblin')
+    await placeCharacter(page, 'Wizard')
+
+    const positions = await previewTokens(page).evaluateAll((els) =>
+      els.map((el) => ({
+        left: parseFloat((el as HTMLElement).style.left),
+        top: parseFloat((el as HTMLElement).style.top),
+      })),
+    )
+    for (let i = 0; i < positions.length; i++) {
+      for (let j = i + 1; j < positions.length; j++) {
+        const dx = Math.abs(positions[i]!.left - positions[j]!.left)
+        const dy = Math.abs(positions[i]!.top - positions[j]!.top)
+        expect(dx > 5 || dy > 5).toBe(true)
+      }
+    }
   })
 
   test('drop a character onto the stage at a specific position', async ({ page }) => {
@@ -120,6 +144,27 @@ test.describe('characters', () => {
     const top = await token.evaluate((el) => parseFloat(el.style.top))
     expect(left).toBeCloseTo(20, 0)
     expect(top).toBeCloseTo(30, 0)
+  })
+
+  test('a hidden character stays in the scene but is not shown to players', async ({ page }) => {
+    await gotoDm(page)
+    await uploadCharacters(page, ['Hero'])
+    await placeCharacter(page, 'Hero')
+
+    const token = previewTokens(page).first()
+    await token.click()
+    await page.locator('.token-controls button[title="Hide from players"]').click()
+    await expect(token).toHaveClass(/hidden/)
+
+    // Still in the DM preview, but excluded from the published screen.
+    await publish(page)
+    await expect(previewTokens(page)).toHaveCount(1)
+    await expect(liveTokens(page)).toHaveCount(0)
+
+    await page.locator('.token-controls button[title="Show to players"]').click()
+    await expect(token).not.toHaveClass(/hidden/)
+    await publish(page)
+    await expect(liveTokens(page)).toHaveCount(1)
   })
 
   test('clear characters removes all tokens', async ({ page }) => {

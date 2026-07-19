@@ -7,6 +7,8 @@ export interface StageToken {
   y: number
   scale: number
   label?: string
+  /** Rendered ghosted on the DM preview; never sent to the player screen. */
+  hidden?: boolean
 }
 
 const props = defineProps<{
@@ -22,6 +24,7 @@ const emit = defineEmits<{
   move: [index: number, x: number, y: number]
   resize: [index: number, scale: number]
   remove: [index: number]
+  toggleHidden: [index: number]
   dropCharacter: [characterId: string, x: number, y: number]
 }>()
 
@@ -121,7 +124,7 @@ function onDrop(e: DragEvent): void {
       v-for="(t, i) in tokens"
       :key="i"
       class="token"
-      :class="{ selected: editable && selected === i, editable }"
+      :class="{ selected: editable && selected === i, editable, hidden: t.hidden }"
       :style="{
         left: t.x * 100 + '%',
         top: t.y * 100 + '%',
@@ -134,6 +137,12 @@ function onDrop(e: DragEvent): void {
       <div v-if="editable && selected === i" class="token-controls" @pointerdown.stop>
         <button title="Smaller" @click="nudgeScale(i, -1)"><i class="pi pi-minus"></i></button>
         <button title="Larger" @click="nudgeScale(i, 1)"><i class="pi pi-plus"></i></button>
+        <button
+          :title="t.hidden ? 'Show to players' : 'Hide from players'"
+          @click="emit('toggleHidden', i)"
+        >
+          <i class="pi" :class="t.hidden ? 'pi-eye-slash' : 'pi-eye'"></i>
+        </button>
         <button class="danger" title="Remove from screen" @click="emit('remove', i)">
           <i class="pi pi-times"></i>
         </button>
@@ -196,6 +205,10 @@ function onDrop(e: DragEvent): void {
 .token.selected {
   outline: 2px dashed #8b7cf6;
   outline-offset: 3px;
+}
+.token.hidden img {
+  opacity: 0.35;
+  filter: grayscale(0.7) drop-shadow(0 4px 10px rgba(0, 0, 0, 0.55));
 }
 .token-controls {
   position: absolute;

@@ -21,6 +21,7 @@ import {
   beginDraftEdit,
   updatePlacement,
   removeCharacterFromDraft,
+  toggleCharacterHidden,
   addCharacterToDraft,
   clearDraft,
   currentScene,
@@ -42,11 +43,14 @@ const tabs: { id: Tab; label: string }[] = [
   { id: 'music', label: 'Music' },
 ]
 
-function compositionTokens(comp: ScreenComposition): StageToken[] {
+function compositionTokens(comp: ScreenComposition, showHidden = false): StageToken[] {
   return comp.characters.flatMap((p) => {
+    if (p.hidden && !showHidden) return []
     const ch = state.characters.find((c) => c.id === p.characterId)
     if (!ch || !imageUrls[ch.imageId]) return []
-    return [{ url: imageUrls[ch.imageId]!, x: p.x, y: p.y, scale: p.scale, label: ch.name }]
+    return [
+      { url: imageUrls[ch.imageId]!, x: p.x, y: p.y, scale: p.scale, label: ch.name, hidden: p.hidden },
+    ]
   })
 }
 
@@ -55,7 +59,7 @@ function sceneUrl(comp: ScreenComposition): string | null {
   return scene ? (imageUrls[scene.imageId] ?? null) : null
 }
 
-const draftTokens = computed(() => compositionTokens(state.draft))
+const draftTokens = computed(() => compositionTokens(state.draft, true))
 const draftSceneUrl = computed(() => sceneUrl(state.draft))
 const liveTokens = computed(() => compositionTokens(state.committed))
 const liveSceneUrl = computed(() => sceneUrl(state.committed))
@@ -188,6 +192,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
                 @move="(i, x, y) => updatePlacement(i, { x, y })"
                 @resize="(i, s) => updatePlacement(i, { scale: s })"
                 @remove="removeCharacterFromDraft"
+                @toggle-hidden="toggleCharacterHidden"
                 @drop-character="(id, x, y) => addCharacterToDraft(id, x, y)"
               />
             </div>
